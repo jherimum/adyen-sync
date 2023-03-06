@@ -1,24 +1,47 @@
-use clap::{Args, Parser, Subcommand};
+use std::env;
+
+use adyen_sync::{
+    commands::{config::ConfigCommand, sync::SyncCommand},
+    handlers::{
+        config::{set, show},
+        sync::{status, update, watch},
+    },
+    settings::Settings,
+};
+
+use clap::{Parser, Subcommand};
 
 #[derive(Debug, Parser)]
-#[clap(author, version, about)]
-pub struct AsyncAdyenArgs {
-    #[clap(subcommand)]
-    command: Command,
+pub struct AdyenSyncArgs {
+    #[command(subcommand)]
+    commands: AdyenSyncCommand,
+
+    #[arg(short, long, global = true)]
+    debug: bool,
 }
 
 #[derive(Debug, Subcommand)]
-pub enum Command {
-    Status(StatusCommand),
+pub enum AdyenSyncCommand {
+    /// Configuration
+    Config(ConfigCommand),
+
+    /// Sync database
+    Sync(SyncCommand),
 }
 
-#[derive(Debug, Args)]
-pub struct StatusCommand {
-    source_connection: Option<String>,
-    target_connection: Option<String>,
-}
+fn main() -> Result<(), anyhow::Error> {
+    let config = Settings::load()?;
+    let args = AdyenSyncArgs::parse();
 
-fn main() {
-    let x = AsyncAdyenArgs::parse();
-    println!("{:?}", x);
+    match args.commands {
+        AdyenSyncCommand::Config(config_c) => match config_c.commands {
+            adyen_sync::commands::config::ConfigSubCommand::Show(c) => show(&config, &c),
+            adyen_sync::commands::config::ConfigSubCommand::Set(c) => set(&config, &c),
+        },
+        AdyenSyncCommand::Sync(sync_c) => match sync_c.commands {
+            adyen_sync::commands::sync::SyncSubCommand::Status(c) => status(c),
+            adyen_sync::commands::sync::SyncSubCommand::Update(c) => update(c),
+            adyen_sync::commands::sync::SyncSubCommand::Watch(c) => watch(c),
+        },
+    }
 }
