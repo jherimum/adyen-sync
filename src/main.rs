@@ -1,4 +1,8 @@
-use adyen_sync::{commands::*, handlers::*, settings::Settings};
+use adyen_sync::{
+    commands::*,
+    handlers::{config::config_handler, database::database_handler},
+    settings::Settings,
+};
 use clap::Parser;
 
 #[tokio::main]

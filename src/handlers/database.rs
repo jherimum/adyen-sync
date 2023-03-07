@@ -1,50 +1,17 @@
-use crate::{
-    commands::*,
-    database::{self},
-    settings::Settings,
-};
+use std::time::Duration;
+
 use anyhow::Result;
 use chrono::Duration as ChronoDuration;
 use chrono::Utc;
-use indicatif::ProgressBar;
-use indicatif::ProgressStyle;
-use sqlx::MySqlConnection;
+use indicatif::{ProgressBar, ProgressStyle};
 use sqlx::MySqlPool;
-use std::time::Duration;
 
-pub async fn config_show(settings: &Settings) -> Result<()> {
-    println!("Settings: {}", serde_json::to_string_pretty(settings)?);
-    Ok(())
-}
-
-pub async fn config_set(
-    settings: &mut Settings,
-    target_url: &Option<String>,
-    source_url: &Option<String>,
-    timeout: &Option<i64>,
-) -> Result<()> {
-    settings.update_source_url(source_url);
-    settings.update_target_url(target_url);
-    settings.update_timeout(timeout);
-    settings.write()?;
-    println!("Settings: {}", serde_json::to_string_pretty(settings)?);
-    Ok(())
-}
-
-pub async fn config_handler(
-    settings: &mut Settings,
-    globals: &GlobalOpts,
-    config_command: &ConfigCommand,
-) -> Result<()> {
-    match &config_command.subcommand {
-        ConfigSubCommand::Show => config_show(&settings).await,
-        ConfigSubCommand::Set {
-            target_url,
-            source_url,
-            timeout,
-        } => config_set(settings, target_url, source_url, timeout).await,
-    }
-}
+use crate::commands::DatabaseOpts;
+use crate::{
+    commands::{DatabaseCommand, DatabaseSubCommand, GlobalOpts},
+    database,
+    settings::Settings,
+};
 
 pub async fn database_handler(
     settings: &Settings,
@@ -53,13 +20,13 @@ pub async fn database_handler(
 ) -> Result<()> {
     match command.subcommand {
         DatabaseSubCommand::Status => {
-            database_status(&settings, &globals, &command.global_database_opts).await
+            database_status(settings, globals, &command.global_database_opts).await
         }
         DatabaseSubCommand::Sync => {
-            databse_sync(&settings, &globals, &command.global_database_opts).await
+            databse_sync(settings, globals, &command.global_database_opts).await
         }
         DatabaseSubCommand::Watch => {
-            database_watch(&settings, &globals, &command.global_database_opts).await
+            database_watch(settings, globals, &command.global_database_opts).await
         }
     }
 }
@@ -122,7 +89,7 @@ async fn test_connection(pool: &MySqlPool, source: bool) -> Result<()> {
     let conn_type = if source { "source" } else { "target" };
     spinner.set_message(format!("Verifyng and test {} connection...", conn_type));
 
-    match database::test_conn(&pool).await {
+    match database::test_conn(pool).await {
         Ok(_) => {
             spinner.finish_with_message(format!("{} connection verified successfully", conn_type));
             Ok(())
@@ -136,7 +103,7 @@ async fn test_connection(pool: &MySqlPool, source: bool) -> Result<()> {
 
 pub async fn database_status(
     settings: &Settings,
-    globals_opts: &GlobalOpts,
+    _: &GlobalOpts,
     database_opts: &DatabaseOpts,
 ) -> Result<()> {
     let database_opts = database_opts.merge(settings);
@@ -150,18 +117,10 @@ pub async fn database_status(
     Ok(())
 }
 
-pub async fn databse_sync(
-    cfg: &Settings,
-    globals: &GlobalOpts,
-    sync_globals: &DatabaseOpts,
-) -> Result<()> {
+pub async fn databse_sync(_: &Settings, _: &GlobalOpts, _: &DatabaseOpts) -> Result<()> {
     todo!()
 }
 
-pub async fn database_watch(
-    cfg: &Settings,
-    globals: &GlobalOpts,
-    sync_globals: &DatabaseOpts,
-) -> Result<()> {
+pub async fn database_watch(_: &Settings, _: &GlobalOpts, _: &DatabaseOpts) -> Result<()> {
     todo!()
 }

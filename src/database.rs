@@ -2,59 +2,59 @@ use std::time::Duration;
 
 use anyhow::{Context, Result};
 use chrono::{DateTime, NaiveDateTime, Utc};
-use sqlx::{mysql::MySqlPoolOptions, query_scalar, types::BigDecimal, MySqlConnection, MySqlPool};
+use sqlx::{mysql::MySqlPoolOptions, types::BigDecimal, MySqlPool};
 
 use crate::commands::DatabaseOpts;
 
 pub struct RawNotification {
-    pub UIDPK: BigDecimal,
-    pub GUID: String,
-    pub CREATED_DATE: NaiveDateTime,
-    pub CONSUMED_DATE: Option<NaiveDateTime>,
-    pub CONSUMED: BigDecimal,
-    pub BODY: Option<String>,
-    pub CLIENT_ID: String,
-    pub CONSUME_SUCCESS: BigDecimal,
+    pub uidpk: BigDecimal,
+    pub guid: String,
+    pub created_date: NaiveDateTime,
+    pub consumed_date: Option<NaiveDateTime>,
+    pub consumed: BigDecimal,
+    pub body: Option<String>,
+    pub client_id: String,
+    pub consume_success: BigDecimal,
 }
 
 pub struct RawNotificationHeader {
-    TADYEN_RAW_NOTIFICATION_UID: BigDecimal,
-    NAME: String,
-    VALUE: Option<String>,
+    pub tadyen_raw_notification_uid: BigDecimal,
+    pub name: String,
+    pub value: Option<String>,
 }
 
 pub struct NotificationItem {
-    UIDPK: BigDecimal,
-    GUID: String,
-    CREATED_DATE: NaiveDateTime,
-    CONSUME_SUCCESS: BigDecimal,
-    CONSUMED_DATE: Option<NaiveDateTime>,
-    CONSUMED: BigDecimal,
-    CURRENCY: Option<String>,
-    AMOUNT: Option<BigDecimal>,
-    EVENT_CODE: String,
-    EVENT_DATE: Option<NaiveDateTime>,
-    MERCHANT_ACCOUNT_CODE: String,
-    MERCHANT_REFERENCE: String,
-    PAYMENT_METHOD: String,
-    PSP_REFERENCE: String,
-    REASON: Option<String>,
-    SUCCESS: BigDecimal,
-    LIVE: BigDecimal,
-    ORIGINAL_REFERENCE: String,
-    CLIENT_ID: String,
-    RAW_NOTIFICATION_ITEM_GUID: String,
+    pub uidpk: BigDecimal,
+    pub guid: String,
+    pub created_date: NaiveDateTime,
+    pub consume_success: BigDecimal,
+    pub consumed_date: Option<NaiveDateTime>,
+    pub consumed: BigDecimal,
+    pub currency: Option<String>,
+    pub amount: Option<BigDecimal>,
+    pub event_code: String,
+    pub event_date: Option<NaiveDateTime>,
+    pub merchant_account_code: String,
+    pub merchant_reference: String,
+    pub payment_method: String,
+    pub psp_reference: String,
+    pub reason: Option<String>,
+    pub success: BigDecimal,
+    pub live: BigDecimal,
+    pub original_reference: String,
+    pub client_id: String,
+    pub raw_notification_item_guid: String,
 }
 
 pub struct NotificationItemOperation {
-    NOTIFICATION_ITEM_UID: BigDecimal,
-    OPERATION: String,
+    pub notification_item_uid: BigDecimal,
+    pub operation: String,
 }
 
 pub struct NotificationItemData {
-    NOTIFICATION_ITEM_UID: BigDecimal,
-    NAME: String,
-    VALUE: Option<String>,
+    pub notification_item_uid: BigDecimal,
+    pub name: String,
+    pub value: Option<String>,
 }
 
 pub async fn test_conn(conn: &MySqlPool) -> Result<()> {
