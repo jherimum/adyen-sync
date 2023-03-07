@@ -1,6 +1,9 @@
 use adyen_sync::{
-    commands::*,
-    handlers::{config::config_handler, database::database_handler},
+    commands::{
+        config::handlers::config_handler,
+        database::handlers::database_handler,
+        root::{CliArgs, Command},
+    },
     settings::Settings,
 };
 use clap::Parser;

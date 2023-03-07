@@ -1,9 +1,8 @@
 use anyhow::Result;
 
-use crate::{
-    commands::{ConfigCommand, ConfigSubCommand, GlobalOpts},
-    settings::Settings,
-};
+use crate::{commands::root::GlobalOpts, settings::Settings};
+
+use super::commands::{ConfigCommand, ConfigSubCommand};
 
 pub async fn config_handler(
     settings: &mut Settings,

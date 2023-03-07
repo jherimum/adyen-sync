@@ -6,14 +6,15 @@ use chrono::Utc;
 use indicatif::{ProgressBar, ProgressStyle};
 use sqlx::MySqlPool;
 
-use crate::commands::DatabaseOpts;
+use crate::commands::root::GlobalOpts;
 use crate::database::queries::count_raw_notification_after;
 use crate::database::queries::last_raw_notification;
 use crate::database::queries::test_conn;
-use crate::{
-    commands::{DatabaseCommand, DatabaseSubCommand, GlobalOpts},
-    settings::Settings,
-};
+use crate::settings::Settings;
+
+use super::commands::DatabaseCommand;
+use super::commands::DatabaseOpts;
+use super::commands::DatabaseSubCommand;
 
 pub async fn database_handler(
     settings: &Settings,

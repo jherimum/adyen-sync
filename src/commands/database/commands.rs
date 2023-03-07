@@ -1,57 +1,5 @@
 use crate::settings::Settings;
-use clap::Parser;
 use clap::{Args, Subcommand};
-
-#[derive(Debug, Parser)]
-pub struct CliArgs {
-    #[command(subcommand)]
-    pub command: Command,
-
-    #[clap(flatten)]
-    pub global_opts: GlobalOpts,
-}
-
-#[derive(Debug, Args)]
-pub struct GlobalOpts {
-    #[clap(short, long, global = true)]
-    debug: bool,
-}
-
-#[derive(Debug, Subcommand)]
-pub enum Command {
-    /// Configuration commands
-    Config(ConfigCommand),
-
-    /// Database commands
-    Database(DatabaseCommand),
-}
-
-#[derive(Debug, Args)]
-pub struct ConfigCommand {
-    #[clap(subcommand)]
-    pub subcommand: ConfigSubCommand,
-}
-
-#[derive(Debug, Subcommand)]
-pub enum ConfigSubCommand {
-    /// Show configuration values
-    Show,
-
-    /// Update configuration values
-    Set {
-        /// Target mysql database connection String. Ex: mysql://user:password@host:port/database
-        #[arg(short, long)]
-        target_url: Option<String>,
-
-        /// Source mysql database connection String. Ex: mysql://user:password@host:port/database
-        #[arg(short, long)]
-        source_url: Option<String>,
-
-        /// Timeout in seconds t aquire a connection
-        #[arg(short, long)]
-        timeout: Option<i64>,
-    },
-}
 
 #[derive(Debug, Args)]
 pub struct DatabaseCommand {

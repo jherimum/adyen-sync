@@ -3,7 +3,7 @@ use chrono::{DateTime, Utc};
 use sqlx::{mysql::MySqlPoolOptions, types::BigDecimal, MySqlPool};
 use std::time::Duration;
 
-use crate::commands::DatabaseOpts;
+use crate::commands::database::commands::DatabaseOpts;
 
 pub async fn test_conn(conn: &MySqlPool) -> Result<()> {
     sqlx::query_scalar::<_, i64>("select 1")
