@@ -145,7 +145,12 @@ pub async fn count_raw_notification_after<'e, E: MySqlExecutor<'e>>(
         .context("context")
 }
 
-impl TryFrom<DatabaseOpts> for (MySqlPool, MySqlPool) {
+pub struct Pools {
+    pub source: MySqlPool,
+    pub target: MySqlPool,
+}
+
+impl TryFrom<DatabaseOpts> for Pools {
     type Error = anyhow::Error;
 
     fn try_from(value: DatabaseOpts) -> Result<Self, Self::Error> {
@@ -155,6 +160,6 @@ impl TryFrom<DatabaseOpts> for (MySqlPool, MySqlPool) {
         let target = MySqlPoolOptions::new()
             .acquire_timeout(Duration::from_secs(5))
             .connect_lazy(&value.target_url.unwrap())?;
-        Ok((source, target))
+        Ok(Pools { source, target })
     }
 }

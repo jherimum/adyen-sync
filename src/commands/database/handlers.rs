@@ -12,6 +12,7 @@ use crate::database::repo;
 use crate::database::repo::count_raw_notification_after;
 use crate::database::repo::last_raw_notification;
 use crate::database::repo::test_conn;
+use crate::database::repo::Pools;
 use crate::settings::Settings;
 
 use super::commands::DatabaseCommand;
@@ -107,12 +108,12 @@ pub async fn database_status(
     database_opts: &DatabaseOpts,
 ) -> Result<()> {
     let database_opts = database_opts.merge(settings);
-    let pools: (MySqlPool, MySqlPool) = database_opts.try_into()?;
+    let pools: Pools = database_opts.try_into()?;
 
-    test_connection(&pools.0, true).await?;
-    test_connection(&pools.1, true).await?;
+    test_connection(&pools.source, true).await?;
+    test_connection(&pools.target, true).await?;
 
-    diff(&pools.0, &pools.1).await?;
+    diff(&pools.source, &pools.target).await?;
 
     Ok(())
 }
@@ -123,14 +124,13 @@ pub async fn databse_sync(
     database_opts: &DatabaseOpts,
 ) -> Result<()> {
     let database_opts = database_opts.merge(settings);
-    let pools: (MySqlPool, MySqlPool) = database_opts.try_into()?;
+    let pools: Pools = database_opts.try_into()?;
 
-    let mut last_uid = repo::last_raw_notification(&pools.1).await?;
-    //let count = queries::count_raw_notification_after(&pools.1, &last_uid).await?;
-    let mut result = repo::retrieve_raw_notification(&pools.0, &last_uid, 10).await?;
+    let mut last_uid = repo::last_raw_notification(&pools.target).await?;
+    let mut result = repo::retrieve_raw_notification(&pools.source, &last_uid, 10).await?;
 
     while !result.is_empty() {
-        let mut tx = pools.1.begin().await?;
+        let mut tx = pools.target.begin().await?;
         for r in result.iter_mut() {
             r.to_target("client_id");
             repo::insert_raw_notification(&mut tx, r.clone()).await?;
@@ -139,8 +139,8 @@ pub async fn databse_sync(
         }
 
         tx.commit().await?;
-        last_uid = repo::last_raw_notification(&pools.1).await?;
-        result = repo::retrieve_raw_notification(&pools.0, &last_uid, 10).await?;
+        last_uid = repo::last_raw_notification(&pools.target).await?;
+        result = repo::retrieve_raw_notification(&pools.source, &last_uid, 10).await?;
     }
 
     Ok(())
