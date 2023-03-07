@@ -144,7 +144,7 @@ pub async fn find_headers<'e, E: MySqlExecutor<'e>>(
         .context("context")
 }
 
-pub async fn find_item_data_after_uidpk<'e, E: MySqlExecutor<'e>>(
+pub async fn find_item_data<'e, E: MySqlExecutor<'e>>(
     exec: E,
     item_uid: &BigDecimal,
 ) -> Result<Vec<NotificationItemData>> {
@@ -155,7 +155,7 @@ pub async fn find_item_data_after_uidpk<'e, E: MySqlExecutor<'e>>(
         .context("context")
 }
 
-pub async fn find_item_after_uidpk<'e, E: MySqlExecutor<'e>>(
+pub async fn find_items<'e, E: MySqlExecutor<'e>>(
     exec: E,
     raw_guid: &str,
 ) -> Result<Vec<NotificationItem>> {
@@ -166,7 +166,7 @@ pub async fn find_item_after_uidpk<'e, E: MySqlExecutor<'e>>(
         .context("context")
 }
 
-pub async fn find_item_operation_after_uidpk<'e, E: MySqlExecutor<'e>>(
+pub async fn find_item_operations<'e, E: MySqlExecutor<'e>>(
     exec: E,
     item_uid: &BigDecimal,
 ) -> Result<Vec<NotificationItemOperation>> {
