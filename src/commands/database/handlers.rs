@@ -1,15 +1,17 @@
+use std::io;
+use std::io::Write;
 use std::time::Duration;
 
 use anyhow::Result;
-use chrono::Duration as ChronoDuration;
-use chrono::Utc;
 use indicatif::{ProgressBar, ProgressStyle};
 use sqlx::MySqlPool;
 
 use crate::commands::root::GlobalOpts;
-use crate::database::queries::count_raw_notification_after;
-use crate::database::queries::last_raw_notification;
-use crate::database::queries::test_conn;
+use crate::database::models::ToTarget;
+use crate::database::repo;
+use crate::database::repo::count_raw_notification_after;
+use crate::database::repo::last_raw_notification;
+use crate::database::repo::test_conn;
 use crate::settings::Settings;
 
 use super::commands::DatabaseCommand;
@@ -56,12 +58,7 @@ async fn diff(source_conn: &MySqlPool, target_conn: &MySqlPool) -> Result<()> {
     );
 
     let last = last_raw_notification(target_conn).await?;
-    let count = count_raw_notification_after(
-        source_conn,
-        last,
-        Utc::now() - ChronoDuration::minutes(1000000000),
-    )
-    .await?;
+    let count = count_raw_notification_after(source_conn, &last).await?;
 
     spinner.finish_with_message(format!(
         "There are {} notifications not sync on target database.",
@@ -120,8 +117,33 @@ pub async fn database_status(
     Ok(())
 }
 
-pub async fn databse_sync(_: &Settings, _: &GlobalOpts, _: &DatabaseOpts) -> Result<()> {
-    todo!()
+pub async fn databse_sync(
+    settings: &Settings,
+    global_opts: &GlobalOpts,
+    database_opts: &DatabaseOpts,
+) -> Result<()> {
+    let database_opts = database_opts.merge(settings);
+    let pools: (MySqlPool, MySqlPool) = database_opts.try_into()?;
+
+    let mut last_uid = repo::last_raw_notification(&pools.1).await?;
+    //let count = queries::count_raw_notification_after(&pools.1, &last_uid).await?;
+    let mut result = repo::retrieve_raw_notification(&pools.0, &last_uid, 10).await?;
+
+    while !result.is_empty() {
+        let mut tx = pools.1.begin().await?;
+        for r in result.iter_mut() {
+            r.to_target("client_id");
+            repo::insert_raw_notification(&mut tx, r.clone()).await?;
+            println!("{}", r.uidpk);
+            io::stdout().flush().unwrap();
+        }
+
+        tx.commit().await?;
+        last_uid = repo::last_raw_notification(&pools.1).await?;
+        result = repo::retrieve_raw_notification(&pools.0, &last_uid, 10).await?;
+    }
+
+    Ok(())
 }
 
 pub async fn database_watch(_: &Settings, _: &GlobalOpts, _: &DatabaseOpts) -> Result<()> {

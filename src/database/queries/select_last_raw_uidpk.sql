@@ -1,0 +1,1 @@
+select coalesce(max(uidpk), 0) from tadyen_raw_notification
