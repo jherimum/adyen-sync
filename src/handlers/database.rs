@@ -7,9 +7,11 @@ use indicatif::{ProgressBar, ProgressStyle};
 use sqlx::MySqlPool;
 
 use crate::commands::DatabaseOpts;
+use crate::database::queries::count_raw_notification_after;
+use crate::database::queries::last_raw_notification;
+use crate::database::queries::test_conn;
 use crate::{
     commands::{DatabaseCommand, DatabaseSubCommand, GlobalOpts},
-    database,
     settings::Settings,
 };
 
@@ -52,8 +54,8 @@ async fn diff(source_conn: &MySqlPool, target_conn: &MySqlPool) -> Result<()> {
         "Calculating the number of notifications are not sync with target database...",
     );
 
-    let last = database::last_raw_notification(target_conn).await?;
-    let count = database::count_raw_notification_after(
+    let last = last_raw_notification(target_conn).await?;
+    let count = count_raw_notification_after(
         source_conn,
         last,
         Utc::now() - ChronoDuration::minutes(1000000000),
@@ -89,7 +91,7 @@ async fn test_connection(pool: &MySqlPool, source: bool) -> Result<()> {
     let conn_type = if source { "source" } else { "target" };
     spinner.set_message(format!("Verifyng and test {} connection...", conn_type));
 
-    match database::test_conn(pool).await {
+    match test_conn(pool).await {
         Ok(_) => {
             spinner.finish_with_message(format!("{} connection verified successfully", conn_type));
             Ok(())
