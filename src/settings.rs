@@ -54,7 +54,7 @@ impl Settings {
     fn config_file_path() -> Result<PathBuf> {
         home::home_dir()
             .map(|h| h.join(CONFIG_FOLDER_NAME).join(CONFIG_FILE_NAME))
-            .ok_or_else(|| anyhow!(""))
+            .ok_or_else(|| anyhow!("config_file_path error"))
     }
 
     pub fn update_target_url(&mut self, url: Option<String>) {
