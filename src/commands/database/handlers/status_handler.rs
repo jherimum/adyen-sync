@@ -1,50 +1,31 @@
-use std::io;
-use std::io::Write;
 use std::time::Duration;
 
 use anyhow::Result;
 use indicatif::{ProgressBar, ProgressStyle};
 use sqlx::MySqlPool;
 
+use crate::commands::database::commands::DatabaseOpts;
 use crate::commands::root::GlobalOpts;
-use crate::database::models::ToTarget;
-use crate::database::repo;
 use crate::database::repo::count_raw_notification_after;
 use crate::database::repo::get_max_raw_uidpk;
 use crate::database::repo::test_conn;
 use crate::database::repo::Pools;
 use crate::settings::Settings;
 
-use super::commands::DatabaseCommand;
-use super::commands::DatabaseOpts;
-use super::commands::DatabaseSubCommand;
-
-pub async fn database_handler(
+pub async fn database_status(
     settings: &Settings,
-    globals: &GlobalOpts,
-    command: &DatabaseCommand,
+    _: &GlobalOpts,
+    database_opts: &DatabaseOpts,
 ) -> Result<()> {
-    match &command.subcommand {
-        DatabaseSubCommand::Status => {
-            database_status(settings, globals, &command.global_database_opts).await
-        }
-        DatabaseSubCommand::Watch => {
-            database_watch(settings, globals, &command.global_database_opts).await
-        }
-        DatabaseSubCommand::Sync {
-            batch_size,
-            target_client_id,
-        } => {
-            databse_sync(
-                settings,
-                globals,
-                &command.global_database_opts,
-                *batch_size,
-                target_client_id.clone(),
-            )
-            .await
-        }
-    }
+    let database_opts = database_opts.merge(settings);
+    let pools: Pools = database_opts.try_into()?;
+
+    test_connection(&pools.source, true).await?;
+    test_connection(&pools.target, true).await?;
+
+    diff(&pools.source, &pools.target).await?;
+
+    Ok(())
 }
 
 async fn diff(source_conn: &MySqlPool, target_conn: &MySqlPool) -> Result<()> {
@@ -110,54 +91,4 @@ async fn test_connection(pool: &MySqlPool, source: bool) -> Result<()> {
             Err(e)
         }
     }
-}
-
-pub async fn database_status(
-    settings: &Settings,
-    _: &GlobalOpts,
-    database_opts: &DatabaseOpts,
-) -> Result<()> {
-    let database_opts = database_opts.merge(settings);
-    let pools: Pools = database_opts.try_into()?;
-
-    test_connection(&pools.source, true).await?;
-    test_connection(&pools.target, true).await?;
-
-    diff(&pools.source, &pools.target).await?;
-
-    Ok(())
-}
-
-pub async fn databse_sync(
-    settings: &Settings,
-    global_opts: &GlobalOpts,
-    database_opts: &DatabaseOpts,
-    batch_size: u8,
-    target_client_id: String,
-) -> Result<()> {
-    let database_opts = database_opts.merge(settings);
-    let pools: Pools = database_opts.try_into()?;
-
-    let mut max_target_raw_uid = repo::get_max_raw_uidpk(&pools.target).await?;
-    let mut raws_to_import =
-        repo::find_raw_after_uidpk(&pools.source, &max_target_raw_uid, batch_size).await?;
-
-    while !raws_to_import.is_empty() {
-        let mut tx = pools.target.begin().await?;
-        for r in raws_to_import.iter_mut() {
-            r.to_target(&target_client_id);
-            repo::insert_raw_notification(&mut tx, r).await?;
-        }
-        tx.commit().await?;
-
-        max_target_raw_uid = repo::get_max_raw_uidpk(&pools.target).await?;
-        raws_to_import =
-            repo::find_raw_after_uidpk(&pools.source, &max_target_raw_uid, batch_size).await?;
-    }
-
-    Ok(())
-}
-
-pub async fn database_watch(_: &Settings, _: &GlobalOpts, _: &DatabaseOpts) -> Result<()> {
-    todo!()
 }
