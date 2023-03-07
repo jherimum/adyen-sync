@@ -49,7 +49,15 @@ pub enum DatabaseSubCommand {
     Status,
 
     /// Sync notifications
-    Sync,
+    Sync {
+        ///batch size dor sync database
+        #[arg(short, long, default_value_t = 50)]
+        batch_size: u8,
+
+        /// Client id to be used on target database
+        #[arg(short, long)]
+        target_client_id: String,
+    },
 
     /// Watch source database updates and sync
     Watch,

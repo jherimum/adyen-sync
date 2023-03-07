@@ -10,7 +10,7 @@ use crate::commands::root::GlobalOpts;
 use crate::database::models::ToTarget;
 use crate::database::repo;
 use crate::database::repo::count_raw_notification_after;
-use crate::database::repo::last_raw_notification;
+use crate::database::repo::get_max_raw_uidpk;
 use crate::database::repo::test_conn;
 use crate::database::repo::Pools;
 use crate::settings::Settings;
@@ -24,15 +24,25 @@ pub async fn database_handler(
     globals: &GlobalOpts,
     command: &DatabaseCommand,
 ) -> Result<()> {
-    match command.subcommand {
+    match &command.subcommand {
         DatabaseSubCommand::Status => {
             database_status(settings, globals, &command.global_database_opts).await
         }
-        DatabaseSubCommand::Sync => {
-            databse_sync(settings, globals, &command.global_database_opts).await
-        }
         DatabaseSubCommand::Watch => {
             database_watch(settings, globals, &command.global_database_opts).await
+        }
+        DatabaseSubCommand::Sync {
+            batch_size,
+            target_client_id,
+        } => {
+            databse_sync(
+                settings,
+                globals,
+                &command.global_database_opts,
+                *batch_size,
+                target_client_id.clone(),
+            )
+            .await
         }
     }
 }
@@ -58,7 +68,7 @@ async fn diff(source_conn: &MySqlPool, target_conn: &MySqlPool) -> Result<()> {
         "Calculating the number of notifications are not sync with target database...",
     );
 
-    let last = last_raw_notification(target_conn).await?;
+    let last = get_max_raw_uidpk(target_conn).await?;
     let count = count_raw_notification_after(source_conn, &last).await?;
 
     spinner.finish_with_message(format!(
@@ -122,25 +132,27 @@ pub async fn databse_sync(
     settings: &Settings,
     global_opts: &GlobalOpts,
     database_opts: &DatabaseOpts,
+    batch_size: u8,
+    target_client_id: String,
 ) -> Result<()> {
     let database_opts = database_opts.merge(settings);
     let pools: Pools = database_opts.try_into()?;
 
-    let mut last_uid = repo::last_raw_notification(&pools.target).await?;
-    let mut result = repo::retrieve_raw_notification(&pools.source, &last_uid, 10).await?;
+    let mut max_target_raw_uid = repo::get_max_raw_uidpk(&pools.target).await?;
+    let mut raws_to_import =
+        repo::find_raw_after_uidpk(&pools.source, &max_target_raw_uid, batch_size).await?;
 
-    while !result.is_empty() {
+    while !raws_to_import.is_empty() {
         let mut tx = pools.target.begin().await?;
-        for r in result.iter_mut() {
-            r.to_target("client_id");
-            repo::insert_raw_notification(&mut tx, r.clone()).await?;
-            println!("{}", r.uidpk);
-            io::stdout().flush().unwrap();
+        for r in raws_to_import.iter_mut() {
+            r.to_target(&target_client_id);
+            repo::insert_raw_notification(&mut tx, r).await?;
         }
-
         tx.commit().await?;
-        last_uid = repo::last_raw_notification(&pools.target).await?;
-        result = repo::retrieve_raw_notification(&pools.source, &last_uid, 10).await?;
+
+        max_target_raw_uid = repo::get_max_raw_uidpk(&pools.target).await?;
+        raws_to_import =
+            repo::find_raw_after_uidpk(&pools.source, &max_target_raw_uid, batch_size).await?;
     }
 
     Ok(())
