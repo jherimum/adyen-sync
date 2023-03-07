@@ -8,10 +8,8 @@ use chrono::Duration as ChronoDuration;
 use chrono::Utc;
 use indicatif::ProgressBar;
 use indicatif::ProgressStyle;
-use sqlx::ConnectOptions;
 use sqlx::MySqlConnection;
-use sqlx::{mysql::MySqlConnectOptions, MySqlPool};
-use std::str::FromStr;
+use sqlx::MySqlPool;
 use std::time::Duration;
 
 pub async fn config_show(settings: &Settings) -> Result<()> {
@@ -23,9 +21,11 @@ pub async fn config_set(
     settings: &mut Settings,
     target_url: &Option<String>,
     source_url: &Option<String>,
+    timeout: &Option<i64>,
 ) -> Result<()> {
-    settings.update_source_url(source_url.clone());
-    settings.update_target_url(target_url.clone());
+    settings.update_source_url(source_url);
+    settings.update_target_url(target_url);
+    settings.update_timeout(timeout);
     settings.write()?;
     println!("Settings: {}", serde_json::to_string_pretty(settings)?);
     Ok(())
@@ -41,7 +41,8 @@ pub async fn config_handler(
         ConfigSubCommand::Set {
             target_url,
             source_url,
-        } => config_set(settings, target_url, source_url).await,
+            timeout,
+        } => config_set(settings, target_url, source_url, timeout).await,
     }
 }
 
@@ -52,18 +53,38 @@ pub async fn database_handler(
 ) -> Result<()> {
     match command.subcommand {
         DatabaseSubCommand::Status => {
-            database_status(&settings, &globals, &command.global_sync_opts).await
+            database_status(&settings, &globals, &command.global_database_opts).await
         }
         DatabaseSubCommand::Sync => {
-            databse_sync(&settings, &globals, &command.global_sync_opts).await
+            databse_sync(&settings, &globals, &command.global_database_opts).await
         }
         DatabaseSubCommand::Watch => {
-            database_watch(&settings, &globals, &command.global_sync_opts).await
+            database_watch(&settings, &globals, &command.global_database_opts).await
         }
     }
 }
 
-async fn diff(source_conn: &mut MySqlConnection, target_conn: &mut MySqlConnection) -> Result<()> {
+async fn diff(source_conn: &MySqlPool, target_conn: &MySqlPool) -> Result<()> {
+    let spinner = ProgressBar::new_spinner();
+    spinner.enable_steady_tick(Duration::from_millis(100));
+    spinner.set_style(
+        ProgressStyle::with_template("{spinner:.blue} {msg}")
+            .unwrap()
+            .tick_strings(&[
+                "▹▹▹▹▹",
+                "▸▹▹▹▹",
+                "▹▸▹▹▹",
+                "▹▹▸▹▹",
+                "▹▹▹▸▹",
+                "▹▹▹▹▸",
+                "▪▪▪▪▪",
+            ]),
+    );
+
+    spinner.set_message(
+        "Calculating the number of notifications are not sync with target database...",
+    );
+
     let last = database::last_raw_notification(target_conn).await?;
     let count = database::count_raw_notification_after(
         source_conn,
@@ -72,12 +93,15 @@ async fn diff(source_conn: &mut MySqlConnection, target_conn: &mut MySqlConnecti
     )
     .await?;
 
-    println!("The target database is behind {} notifications", count);
+    spinner.finish_with_message(format!(
+        "There are {} notifications not sync on target database.",
+        count
+    ));
 
     Ok(())
 }
 
-async fn test_connection(pool: MySqlPool, source: bool) -> Result<()> {
+async fn test_connection(pool: &MySqlPool, source: bool) -> Result<()> {
     let spinner = ProgressBar::new_spinner();
     spinner.enable_steady_tick(Duration::from_millis(100));
     spinner.set_style(
@@ -118,10 +142,10 @@ pub async fn database_status(
     let database_opts = database_opts.merge(settings);
     let pools: (MySqlPool, MySqlPool) = database_opts.try_into()?;
 
-    test_connection(pools.0, true).await?;
-    test_connection(pools.1, true).await?;
+    test_connection(&pools.0, true).await?;
+    test_connection(&pools.1, true).await?;
 
-    //diff(&mut source_conn, &mut target_conn).await?;
+    diff(&pools.0, &pools.1).await?;
 
     Ok(())
 }

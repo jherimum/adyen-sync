@@ -65,7 +65,7 @@ pub async fn test_conn(conn: &MySqlPool) -> Result<()> {
         .context("context")
 }
 
-pub async fn last_raw_notification(conn: &mut MySqlConnection) -> Result<BigDecimal> {
+pub async fn last_raw_notification(conn: &MySqlPool) -> Result<BigDecimal> {
     sqlx::query_scalar::<_, BigDecimal>(
         "select coalesce(0, max(uidpk)) from tadyen_raw_notification",
     )
@@ -75,7 +75,7 @@ pub async fn last_raw_notification(conn: &mut MySqlConnection) -> Result<BigDeci
 }
 
 pub async fn count_raw_notification_after(
-    conn: &mut MySqlConnection,
+    conn: &MySqlPool,
     uidpk: BigDecimal,
     after: DateTime<Utc>,
 ) -> Result<i64> {

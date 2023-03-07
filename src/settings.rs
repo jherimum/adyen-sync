@@ -10,10 +10,21 @@ use std::{
 const CONFIG_FOLDER_NAME: &str = ".adyen-sync";
 const CONFIG_FILE_NAME: &str = "config.json";
 
-#[derive(Debug, Deserialize, Serialize, Clone, Default)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Settings {
     pub source_url: Option<String>,
     pub target_url: Option<String>,
+    pub timeout: Option<i64>,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self {
+            source_url: Default::default(),
+            target_url: Default::default(),
+            timeout: Some(10),
+        }
+    }
 }
 
 impl Settings {
@@ -57,15 +68,21 @@ impl Settings {
             .ok_or_else(|| anyhow!("config_file_path error"))
     }
 
-    pub fn update_target_url(&mut self, url: Option<String>) {
+    pub fn update_target_url(&mut self, url: &Option<String>) {
         if let Some(url) = url {
-            self.target_url = Some(url)
+            self.target_url = Some(url.clone())
         }
     }
 
-    pub fn update_source_url(&mut self, url: Option<String>) {
+    pub fn update_source_url(&mut self, url: &Option<String>) {
         if let Some(url) = url {
-            self.source_url = Some(url)
+            self.source_url = Some(url.clone())
+        }
+    }
+
+    pub fn update_timeout(&mut self, timeout: &Option<i64>) {
+        if let Some(timeout) = timeout {
+            self.timeout = Some(*timeout)
         }
     }
 }
