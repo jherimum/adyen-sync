@@ -1,3 +1,4 @@
+use crate::settings::Settings;
 use clap::Parser;
 use clap::{Args, Subcommand};
 
@@ -22,67 +23,68 @@ pub enum Command {
     Config(ConfigCommand),
 
     /// Sync database
-    Sync(SyncCommand),
+    Database(DatabaseCommand),
 }
 
 #[derive(Debug, Args)]
 pub struct ConfigCommand {
     #[clap(subcommand)]
-    pub command: ConfigSubCommand,
+    pub subcommand: ConfigSubCommand,
 }
 
 #[derive(Debug, Subcommand)]
 pub enum ConfigSubCommand {
     /// Show configurations
-    Show(ConfigShowCommand),
+    Show,
 
     /// update configuration values
-    Set(ConfigSetCommand),
+    Set {
+        #[arg(short, long)]
+        target_url: Option<String>,
+
+        #[arg(short, long)]
+        source_url: Option<String>,
+    },
+}
+
+#[derive(Debug, Args)]
+pub struct DatabaseCommand {
+    #[clap(subcommand)]
+    pub subcommand: DatabaseSubCommand,
+
+    #[clap(flatten)]
+    pub global_sync_opts: DatabaseOpts,
 }
 
 #[derive(Debug, Args, Clone)]
-pub struct ConfigShowCommand {}
-
-#[derive(Debug, Args, Clone)]
-pub struct ConfigSetCommand {
-    #[arg(short, long)]
+pub struct DatabaseOpts {
+    #[arg(short, long, global = true)]
     pub target_url: Option<String>,
 
-    #[arg(short, long)]
+    #[arg(short, long, global = true)]
     pub source_url: Option<String>,
 }
 
-#[derive(Debug, Args, Clone)]
-pub struct SyncCommand {
-    #[clap(subcommand)]
-    pub commands: SyncSubCommand,
-    //Minutes behind from now
-}
-
-#[derive(Debug, Args, Clone)]
-pub struct GlobalSync {
-    #[arg(short, long, global = true, default_value_t = 10)]
-    pub after: i64,
-
-    #[arg(short, long, global = true)]
-    pub target_url: String,
-
-    #[arg(short, long, global = true)]
-    pub source_url: String,
+impl DatabaseOpts {
+    pub fn merge(&self, settings: &Settings) -> Self {
+        DatabaseOpts {
+            target_url: self
+                .target_url
+                .as_ref()
+                .or(settings.target_url.as_ref())
+                .cloned(),
+            source_url: self
+                .source_url
+                .as_ref()
+                .or(settings.source_url.as_ref())
+                .cloned(),
+        }
+    }
 }
 
 #[derive(Debug, Subcommand, Clone)]
-pub enum SyncSubCommand {
-    Status(SyncStatusCommand),
-    Update(SyncUpdateCommand),
-    Watch(SyncWatchCommand),
+pub enum DatabaseSubCommand {
+    Status,
+    Sync,
+    Watch,
 }
-
-#[derive(Debug, Args, Clone)]
-pub struct SyncStatusCommand {}
-
-#[derive(Debug, Args, Clone)]
-pub struct SyncUpdateCommand {}
-
-#[derive(Debug, Args, Clone)]
-pub struct SyncWatchCommand {}
