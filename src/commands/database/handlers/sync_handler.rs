@@ -12,10 +12,14 @@ pub async fn databse_sync(
     global_opts: &GlobalOpts,
     database_opts: &DatabaseOpts,
     batch_size: u8,
-    target_client_id: String,
+    target_client_id: &Option<String>,
 ) -> Result<()> {
     let database_opts = database_opts.merge(settings);
     let pools: Pools = database_opts.try_into()?;
+    let target_client_id = target_client_id
+        .as_ref()
+        .or(settings.target_client_id.as_ref())
+        .expect("precisa do client id");
 
     let mut max_target_raw_uid = repo::get_max_raw_uidpk(&pools.target).await?;
     let mut raws_to_import =

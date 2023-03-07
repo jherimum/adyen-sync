@@ -15,7 +15,8 @@ pub async fn config_handler(
             target_url,
             source_url,
             timeout,
-        } => config_set(settings, target_url, source_url, timeout).await,
+            target_client_id,
+        } => config_set(settings, target_url, source_url, timeout, target_client_id).await,
     }
 }
 
@@ -29,10 +30,12 @@ pub async fn config_set(
     target_url: &Option<String>,
     source_url: &Option<String>,
     timeout: &Option<i64>,
+    target_client_id: &Option<String>,
 ) -> Result<()> {
-    settings.update_source_url(source_url);
-    settings.update_target_url(target_url);
-    settings.update_timeout(timeout);
+    settings.source_url(source_url);
+    settings.target_url(target_url);
+    settings.timeout(timeout);
+    settings.target_client_id(target_client_id);
     settings.write()?;
     println!("Settings: {}", serde_json::to_string_pretty(settings)?);
     Ok(())

@@ -56,7 +56,7 @@ pub enum DatabaseSubCommand {
 
         /// Client id to be used on target database
         #[arg(short, long)]
-        target_client_id: String,
+        target_client_id: Option<String>,
     },
 
     /// Watch source database updates and sync

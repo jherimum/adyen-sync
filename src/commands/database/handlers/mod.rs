@@ -33,7 +33,7 @@ pub async fn database_handler(
                 globals,
                 &command.global_database_opts,
                 *batch_size,
-                target_client_id.clone(),
+                target_client_id,
             )
             .await
         }

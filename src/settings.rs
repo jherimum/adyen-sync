@@ -15,6 +15,7 @@ pub struct Settings {
     pub source_url: Option<String>,
     pub target_url: Option<String>,
     pub timeout: Option<i64>,
+    pub target_client_id: Option<String>,
 }
 
 impl Default for Settings {
@@ -23,6 +24,7 @@ impl Default for Settings {
             source_url: Default::default(),
             target_url: Default::default(),
             timeout: Some(10),
+            target_client_id: Default::default(),
         }
     }
 }
@@ -68,21 +70,27 @@ impl Settings {
             .ok_or_else(|| anyhow!("config_file_path error"))
     }
 
-    pub fn update_target_url(&mut self, url: &Option<String>) {
+    pub fn target_url(&mut self, url: &Option<String>) {
         if let Some(url) = url {
             self.target_url = Some(url.clone())
         }
     }
 
-    pub fn update_source_url(&mut self, url: &Option<String>) {
+    pub fn source_url(&mut self, url: &Option<String>) {
         if let Some(url) = url {
             self.source_url = Some(url.clone())
         }
     }
 
-    pub fn update_timeout(&mut self, timeout: &Option<i64>) {
+    pub fn timeout(&mut self, timeout: &Option<i64>) {
         if let Some(timeout) = timeout {
             self.timeout = Some(*timeout)
+        }
+    }
+
+    pub fn target_client_id(&mut self, target_client_id: &Option<String>) {
+        if let Some(target_client_id) = target_client_id {
+            self.target_client_id = Some(target_client_id.clone())
         }
     }
 }
