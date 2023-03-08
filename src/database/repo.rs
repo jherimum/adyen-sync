@@ -226,27 +226,27 @@ impl TryFrom<&CommonsDatabaseArgs> for Pools {
     fn try_from(value: &CommonsDatabaseArgs) -> Result<Self, Self::Error> {
         let source = MySqlPoolOptions::new()
             .acquire_timeout(Duration::from_secs(
-                value.timeout.context("timeout not defind")?,
+                value.timeout.context("Timeout time not defined")?,
             ))
             .connect_lazy(
                 &value
                     .source_url
                     .as_ref()
-                    .context("Source url not defined")?,
+                    .context("Source connection url not defined")?,
             )
-            .context("context")?;
+            .context("Error while creating source connection pool")?;
 
         let target = MySqlPoolOptions::new()
             .acquire_timeout(Duration::from_secs(
-                value.timeout.context("timeout not defind")?,
+                value.timeout.context("Timeout time not defined")?,
             ))
             .connect_lazy(
                 &value
                     .target_url
                     .as_ref()
-                    .context("target url not defined")?,
+                    .context("target connection url not defined")?,
             )
-            .context("context")?;
+            .context("Error while creating target connection pool")?;
         Ok(Pools { source, target })
     }
 }

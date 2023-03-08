@@ -5,7 +5,7 @@ use crate::database::models::{NotificationItem, ToTarget};
 use crate::database::repo;
 use crate::database::repo::Pools;
 use crate::settings::{MergeSettings, Settings};
-use anyhow::Result;
+use anyhow::{Context, Result};
 use sqlx::{MySql, MySqlPool, Transaction};
 
 pub async fn databse_sync(
@@ -14,12 +14,19 @@ pub async fn databse_sync(
     args: DatabaseSyncArgs,
 ) -> Result<()> {
     let args = args.merge(settings);
-    let pools: Pools = Pools::try_from(&args)?;
-    let target_client_id = args.target_client_id.expect("tem q ter");
+    let pools: Pools = Pools::try_from(&args).context("Error creating connection pools.")?;
+    let target_client_id = args
+        .target_client_id
+        .context("Target clinet it not defined.")?;
 
-    let mut max_target_raw_uid = repo::get_max_raw_uidpk(&pools.target).await?;
+    let mut max_target_raw_uid = repo::get_max_raw_uidpk(&pools.target)
+        .await
+        .context("Error while fetching target mas raw uidpk")?;
+
     let mut raws_to_import =
-        repo::find_raw_after_uidpk(&pools.source, &max_target_raw_uid, args.batch_size).await?;
+        repo::find_raw_after_uidpk(&pools.source, &max_target_raw_uid, args.batch_size)
+            .await
+            .context("Erro while fetching raw notifications to import")?;
 
     while !raws_to_import.is_empty() {
         let mut tx = pools.target.begin().await?;
