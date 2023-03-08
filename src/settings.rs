@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use config::File;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -55,7 +55,7 @@ impl Settings {
         if !config_file.exists() {
             if let Some(file_dir) = config_file.parent() {
                 if !file_dir.exists() {
-                    create_dir(&file_dir).context(format!(
+                    create_dir(file_dir).context(format!(
                         "Error while creating config folder: {}",
                         file_dir.display()
                     ))?;

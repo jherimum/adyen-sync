@@ -9,7 +9,7 @@ use sqlx::{MySql, MySqlPool, Transaction};
 
 pub async fn databse_sync(
     settings: &Settings,
-    global_opts: &GlobalOpts,
+    _: &GlobalOpts,
     database_opts: &DatabaseOpts,
     batch_size: u8,
     target_client_id: &Option<String>,
@@ -28,10 +28,10 @@ pub async fn databse_sync(
     while !raws_to_import.is_empty() {
         let mut tx = pools.target.begin().await?;
         for raw in raws_to_import.iter_mut() {
-            raw.to_target(&target_client_id);
-            repo::insert_raw_notification(&mut tx, &raw).await?;
+            raw.to_target(target_client_id);
+            repo::insert_raw_notification(&mut tx, raw).await?;
             fetch_and_insert_headers(&mut tx, &pools.source, raw).await?;
-            fetch_and_insert_items(&mut tx, &pools.source, &raw, &target_client_id).await?
+            fetch_and_insert_items(&mut tx, &pools.source, raw, target_client_id).await?
         }
         tx.commit().await?;
 
@@ -65,9 +65,9 @@ async fn fetch_and_insert_items(
     let mut items = repo::find_items(source_pool, &raw.guid).await?;
     for item in items.iter_mut() {
         item.to_target(client_id);
-        repo::insert_item(&mut *tx, &item).await?;
-        fetch_and_insert_item_data(&mut *tx, &source_pool, &item).await?;
-        fetch_and_insert_item_operation(&mut *tx, &source_pool, &item).await?;
+        repo::insert_item(&mut *tx, item).await?;
+        fetch_and_insert_item_data(&mut *tx, source_pool, item).await?;
+        fetch_and_insert_item_operation(&mut *tx, source_pool, item).await?;
     }
     Ok(())
 }
