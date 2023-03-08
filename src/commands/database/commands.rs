@@ -22,7 +22,7 @@ pub struct DatabaseOpts {
 
     /// Timeout in seconds t aquire a connection
     #[arg(short, long, global = true)]
-    pub timeout: Option<i64>,
+    pub timeout: Option<u64>,
 }
 
 impl DatabaseOpts {

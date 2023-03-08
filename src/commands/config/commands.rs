@@ -23,7 +23,7 @@ pub enum ConfigSubCommand {
 
         /// Timeout in seconds t aquire a connection
         #[arg(short, long)]
-        timeout: Option<i64>,
+        timeout: Option<u64>,
 
         /// Target client id
         #[arg(short, long)]

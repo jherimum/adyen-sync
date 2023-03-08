@@ -205,11 +205,18 @@ impl TryFrom<DatabaseOpts> for Pools {
 
     fn try_from(value: DatabaseOpts) -> Result<Self, Self::Error> {
         let source = MySqlPoolOptions::new()
-            .acquire_timeout(Duration::from_secs(5))
-            .connect_lazy(&value.source_url.unwrap())?;
+            .acquire_timeout(Duration::from_secs(
+                value.timeout.context("timeout not defind")?,
+            ))
+            .connect_lazy(&value.source_url.context("Source url not defined")?)
+            .context("context")?;
+
         let target = MySqlPoolOptions::new()
-            .acquire_timeout(Duration::from_secs(5))
-            .connect_lazy(&value.target_url.unwrap())?;
+            .acquire_timeout(Duration::from_secs(
+                value.timeout.context("timeout not defind")?,
+            ))
+            .connect_lazy(&value.target_url.context("target url not defined")?)
+            .context("context")?;
         Ok(Pools { source, target })
     }
 }

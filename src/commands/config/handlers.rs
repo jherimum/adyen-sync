@@ -29,7 +29,7 @@ pub async fn config_set(
     settings: &mut Settings,
     target_url: &Option<String>,
     source_url: &Option<String>,
-    timeout: &Option<i64>,
+    timeout: &Option<u64>,
     target_client_id: &Option<String>,
 ) -> Result<()> {
     settings.source_url(source_url);
