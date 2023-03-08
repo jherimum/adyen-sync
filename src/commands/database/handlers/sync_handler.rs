@@ -1,43 +1,39 @@
+use crate::commands::database::commands::DatabaseSyncArgs;
 use crate::commands::root::GlobalOpts;
+use crate::database::models::RawNotification;
 use crate::database::models::{NotificationItem, ToTarget};
 use crate::database::repo;
 use crate::database::repo::Pools;
-use crate::settings::Settings;
-use crate::{commands::database::commands::DatabaseOpts, database::models::RawNotification};
+use crate::settings::{MergeSettings, Settings};
 use anyhow::Result;
 use sqlx::{MySql, MySqlPool, Transaction};
 
 pub async fn databse_sync(
     settings: &Settings,
     _: &GlobalOpts,
-    database_opts: &DatabaseOpts,
-    batch_size: u8,
-    target_client_id: &Option<String>,
+    args: DatabaseSyncArgs,
 ) -> Result<()> {
-    let database_opts = database_opts.merge(settings);
-    let pools: Pools = database_opts.try_into()?;
-    let target_client_id = target_client_id
-        .as_ref()
-        .or(settings.target_client_id.as_ref())
-        .expect("precisa do client id");
+    let args = args.merge(settings);
+    let pools: Pools = Pools::try_from(&args)?;
+    let target_client_id = args.target_client_id.expect("tem q ter");
 
     let mut max_target_raw_uid = repo::get_max_raw_uidpk(&pools.target).await?;
     let mut raws_to_import =
-        repo::find_raw_after_uidpk(&pools.source, &max_target_raw_uid, batch_size).await?;
+        repo::find_raw_after_uidpk(&pools.source, &max_target_raw_uid, args.batch_size).await?;
 
     while !raws_to_import.is_empty() {
         let mut tx = pools.target.begin().await?;
         for raw in raws_to_import.iter_mut() {
-            raw.to_target(target_client_id);
+            raw.to_target(&target_client_id);
             repo::insert_raw_notification(&mut tx, raw).await?;
             fetch_and_insert_headers(&mut tx, &pools.source, raw).await?;
-            fetch_and_insert_items(&mut tx, &pools.source, raw, target_client_id).await?
+            fetch_and_insert_items(&mut tx, &pools.source, raw, &target_client_id).await?
         }
         tx.commit().await?;
 
         max_target_raw_uid = repo::get_max_raw_uidpk(&pools.target).await?;
         raws_to_import =
-            repo::find_raw_after_uidpk(&pools.source, &max_target_raw_uid, batch_size).await?;
+            repo::find_raw_after_uidpk(&pools.source, &max_target_raw_uid, args.batch_size).await?;
     }
 
     Ok(())

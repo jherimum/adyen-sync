@@ -15,7 +15,7 @@ pub struct CliArgs {
 
 #[derive(Debug, Args)]
 pub struct GlobalOpts {
-    #[clap(short, long, global = true)]
+    #[clap(short = 'X', long, global = true)]
     debug: bool,
 }
 

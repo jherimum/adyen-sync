@@ -1,33 +1,30 @@
-use crate::settings::Settings;
+use crate::settings::{MergeSettings, Settings};
 use clap::{Args, Subcommand};
 
 #[derive(Debug, Args)]
 pub struct DatabaseCommand {
     #[clap(subcommand)]
-    pub subcommand: DatabaseSubCommand,
-
-    #[clap(flatten)]
-    pub global_database_opts: DatabaseOpts,
+    pub command: DatabaseSubCommand,
 }
 
 #[derive(Debug, Args, Clone)]
-pub struct DatabaseOpts {
+pub struct CommonsDatabaseArgs {
     /// Target mysql database connection String. Ex: mysql://user:password@host:port/database
-    #[arg(short, long, global = true)]
+    #[arg(short = 't', long, global = true)]
     pub target_url: Option<String>,
 
     /// Source mysql database connection String. Ex: mysql://user:password@host:port/database
-    #[arg(short, long, global = true)]
+    #[arg(short = 's', long, global = true)]
     pub source_url: Option<String>,
 
     /// Timeout in seconds t aquire a connection
-    #[arg(short, long, global = true)]
+    #[arg(short = 'o', long, global = true)]
     pub timeout: Option<u64>,
 }
 
-impl DatabaseOpts {
-    pub fn merge(&self, settings: &Settings) -> Self {
-        DatabaseOpts {
+impl MergeSettings for CommonsDatabaseArgs {
+    fn merge(self, settings: &Settings) -> Self {
+        Self {
             target_url: self
                 .target_url
                 .as_ref()
@@ -46,19 +43,55 @@ impl DatabaseOpts {
 #[derive(Debug, Subcommand, Clone)]
 pub enum DatabaseSubCommand {
     /// Verify and test target and source connections and show how many notifications are not sync
-    Status,
+    Status {
+        #[clap(flatten)]
+        args: DatabaseStatusArgs,
+    },
 
     /// Sync notifications
     Sync {
-        ///batch size dor sync database
-        #[arg(short, long, default_value_t = 50)]
-        batch_size: u8,
-
-        /// Client id to be used on target database
-        #[arg(short, long)]
-        target_client_id: Option<String>,
+        #[clap(flatten)]
+        args: DatabaseSyncArgs,
     },
 
     /// Watch source database updates and sync
     Watch,
+}
+
+#[derive(Debug, Args, Clone)]
+pub struct DatabaseSyncArgs {
+    #[clap(flatten)]
+    pub args: CommonsDatabaseArgs,
+
+    ///batch size dor sync database
+    #[arg(short, long, default_value_t = 50)]
+    pub batch_size: u8,
+
+    /// Client id to be used on target database
+    #[arg(short, long)]
+    pub target_client_id: Option<String>,
+}
+
+impl MergeSettings for DatabaseSyncArgs {
+    fn merge(self, settings: &Settings) -> Self {
+        DatabaseSyncArgs {
+            args: self.args.merge(&settings),
+            batch_size: self.batch_size,
+            target_client_id: self.target_client_id.or(settings.target_client_id.clone()),
+        }
+    }
+}
+
+impl MergeSettings for DatabaseStatusArgs {
+    fn merge(self, settings: &Settings) -> Self {
+        DatabaseStatusArgs {
+            args: self.args.merge(&settings),
+        }
+    }
+}
+
+#[derive(Debug, Args, Clone)]
+pub struct DatabaseStatusArgs {
+    #[clap(flatten)]
+    pub args: CommonsDatabaseArgs,
 }

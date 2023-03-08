@@ -2,21 +2,16 @@ use anyhow::Result;
 
 use crate::{commands::root::GlobalOpts, settings::Settings};
 
-use super::commands::{ConfigCommand, ConfigSubCommand};
+use super::commands::{ConfigCommand, ConfigSetArgs, ConfigSubCommand};
 
 pub async fn config_handler(
     settings: &mut Settings,
     _: &GlobalOpts,
-    config_command: &ConfigCommand,
+    config_command: ConfigCommand,
 ) -> Result<()> {
-    match &config_command.subcommand {
+    match &config_command.command {
         ConfigSubCommand::Show => config_show(settings).await,
-        ConfigSubCommand::Set {
-            target_url,
-            source_url,
-            timeout,
-            target_client_id,
-        } => config_set(settings, target_url, source_url, timeout, target_client_id).await,
+        ConfigSubCommand::Set { args } => config_set(settings, args).await,
     }
 }
 
@@ -25,17 +20,11 @@ pub async fn config_show(settings: &Settings) -> Result<()> {
     Ok(())
 }
 
-pub async fn config_set(
-    settings: &mut Settings,
-    target_url: &Option<String>,
-    source_url: &Option<String>,
-    timeout: &Option<u64>,
-    target_client_id: &Option<String>,
-) -> Result<()> {
-    settings.source_url(source_url);
-    settings.target_url(target_url);
-    settings.timeout(timeout);
-    settings.target_client_id(target_client_id);
+pub async fn config_set(settings: &mut Settings, args: &ConfigSetArgs) -> Result<()> {
+    settings.source_url(&args.source_url);
+    settings.target_url(&args.target_url);
+    settings.timeout(&args.timeout);
+    settings.target_client_id(&args.target_client_id);
     settings.write()?;
     println!("Settings: {}", serde_json::to_string_pretty(settings)?);
     Ok(())

@@ -1,10 +1,7 @@
 use anyhow::Result;
 
-use crate::{
-    commands::{database::commands::DatabaseOpts, root::GlobalOpts},
-    settings::Settings,
-};
+use crate::{commands::root::GlobalOpts, settings::Settings};
 
-pub async fn database_watch(_: &Settings, _: &GlobalOpts, _: &DatabaseOpts) -> Result<()> {
+pub async fn database_watch(_: &Settings, _: &GlobalOpts) -> Result<()> {
     todo!()
 }

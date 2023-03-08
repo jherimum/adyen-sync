@@ -2,7 +2,9 @@ use super::models::{
     NotificationItem, NotificationItemData, NotificationItemOperation, RawNotification,
     RawNotificationHeader,
 };
-use crate::commands::database::commands::DatabaseOpts;
+use crate::commands::database::commands::{
+    CommonsDatabaseArgs, DatabaseStatusArgs, DatabaseSyncArgs,
+};
 use anyhow::{Context, Result};
 use sqlx::{mysql::MySqlPoolOptions, types::BigDecimal, MySql, MySqlExecutor, MySqlPool};
 use std::time::Duration;
@@ -200,22 +202,50 @@ pub struct Pools {
     pub target: MySqlPool,
 }
 
-impl TryFrom<DatabaseOpts> for Pools {
+impl TryFrom<&DatabaseStatusArgs> for Pools {
     type Error = anyhow::Error;
 
-    fn try_from(value: DatabaseOpts) -> Result<Self, Self::Error> {
+    fn try_from(value: &DatabaseStatusArgs) -> std::result::Result<Self, Self::Error> {
+        let x = &value.args;
+        x.try_into()
+    }
+}
+
+impl TryFrom<&DatabaseSyncArgs> for Pools {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &DatabaseSyncArgs) -> std::result::Result<Self, Self::Error> {
+        let x = &value.args;
+        x.try_into()
+    }
+}
+
+impl TryFrom<&CommonsDatabaseArgs> for Pools {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &CommonsDatabaseArgs) -> Result<Self, Self::Error> {
         let source = MySqlPoolOptions::new()
             .acquire_timeout(Duration::from_secs(
                 value.timeout.context("timeout not defind")?,
             ))
-            .connect_lazy(&value.source_url.context("Source url not defined")?)
+            .connect_lazy(
+                &value
+                    .source_url
+                    .as_ref()
+                    .context("Source url not defined")?,
+            )
             .context("context")?;
 
         let target = MySqlPoolOptions::new()
             .acquire_timeout(Duration::from_secs(
                 value.timeout.context("timeout not defind")?,
             ))
-            .connect_lazy(&value.target_url.context("target url not defined")?)
+            .connect_lazy(
+                &value
+                    .target_url
+                    .as_ref()
+                    .context("target url not defined")?,
+            )
             .context("context")?;
         Ok(Pools { source, target })
     }

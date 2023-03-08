@@ -14,7 +14,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let args = CliArgs::parse();
 
     match args.command {
-        Command::Config(command) => config_handler(&mut config, &args.global_opts, &command).await,
-        Command::Database(command) => database_handler(&config, &args.global_opts, &command).await,
+        Command::Config(command) => config_handler(&mut config, &args.global_opts, command).await,
+        Command::Database(command) => database_handler(&config, &args.global_opts, command).await,
     }
 }

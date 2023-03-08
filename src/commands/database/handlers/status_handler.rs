@@ -1,24 +1,23 @@
-use std::time::Duration;
-
-use anyhow::Result;
-use indicatif::{ProgressBar, ProgressStyle};
-use sqlx::MySqlPool;
-
-use crate::commands::database::commands::DatabaseOpts;
+use crate::commands::database::commands::DatabaseStatusArgs;
 use crate::commands::root::GlobalOpts;
 use crate::database::repo::count_raw_notification_after;
 use crate::database::repo::get_max_raw_uidpk;
 use crate::database::repo::test_conn;
 use crate::database::repo::Pools;
+use crate::settings::MergeSettings;
 use crate::settings::Settings;
+use anyhow::Result;
+use indicatif::{ProgressBar, ProgressStyle};
+use sqlx::MySqlPool;
+use std::time::Duration;
 
 pub async fn database_status(
     settings: &Settings,
     _: &GlobalOpts,
-    database_opts: &DatabaseOpts,
+    args: DatabaseStatusArgs,
 ) -> Result<()> {
-    let database_opts = database_opts.merge(settings);
-    let pools: Pools = database_opts.try_into()?;
+    let args = args.merge(settings);
+    let pools: Pools = Pools::try_from(&args)?;
 
     test_connection(&pools.source, true).await?;
     test_connection(&pools.target, true).await?;

@@ -15,27 +15,11 @@ pub mod watch_handler;
 pub async fn database_handler(
     settings: &Settings,
     globals: &GlobalOpts,
-    command: &DatabaseCommand,
+    command: DatabaseCommand,
 ) -> Result<()> {
-    match &command.subcommand {
-        DatabaseSubCommand::Status => {
-            database_status(settings, globals, &command.global_database_opts).await
-        }
-        DatabaseSubCommand::Watch => {
-            database_watch(settings, globals, &command.global_database_opts).await
-        }
-        DatabaseSubCommand::Sync {
-            batch_size,
-            target_client_id,
-        } => {
-            databse_sync(
-                settings,
-                globals,
-                &command.global_database_opts,
-                *batch_size,
-                target_client_id,
-            )
-            .await
-        }
+    match command.command {
+        DatabaseSubCommand::Status { args } => database_status(settings, globals, args).await,
+        DatabaseSubCommand::Watch => database_watch(settings, globals).await,
+        DatabaseSubCommand::Sync { args } => databse_sync(settings, globals, args).await,
     }
 }

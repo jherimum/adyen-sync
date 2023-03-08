@@ -10,6 +10,10 @@ use std::{
 const CONFIG_FOLDER_NAME: &str = ".adyen-sync";
 const CONFIG_FILE_NAME: &str = "config.json";
 
+pub trait MergeSettings {
+    fn merge(self, settings: &Settings) -> Self;
+}
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Settings {
     pub source_url: Option<String>,
