@@ -78,7 +78,7 @@ impl Settings {
             .context("Erro while deserializing to settings")
     }
 
-    fn config_file_path() -> Result<PathBuf> {
+    pub fn config_file_path() -> Result<PathBuf> {
         Ok(home::home_dir()
             .context("User home could not be found")?
             .join(CONFIG_FOLDER_NAME)

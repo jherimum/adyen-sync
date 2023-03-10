@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use chrono::{NaiveDateTime, Utc};
 use sqlx::{types::BigDecimal, FromRow};
 
@@ -5,7 +7,7 @@ pub trait ToTarget {
     fn to_target(&mut self, client_id: &str);
 }
 
-#[derive(FromRow, Debug, Clone)]
+#[derive(FromRow, Clone)]
 #[sqlx(rename_all = "UPPERCASE")]
 pub struct RawNotification {
     pub uidpk: BigDecimal,
@@ -18,13 +20,26 @@ pub struct RawNotification {
     pub consume_success: BigDecimal,
 }
 
+impl Debug for RawNotification {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RawNotification")
+            .field("uidpk", &self.uidpk)
+            .field("guid", &self.guid)
+            .field("created_date", &self.created_date)
+            .field("consumed_date", &self.consumed_date)
+            .field("consumed", &self.consumed)
+            .field("client_id", &self.client_id)
+            .field("consume_success", &self.consume_success)
+            .finish()
+    }
+}
+
 impl ToTarget for RawNotification {
     fn to_target(&mut self, client_id: &str) {
         self.consumed = BigDecimal::from(0);
         self.consumed_date = None;
         self.consume_success = BigDecimal::from(0);
         self.client_id = client_id.to_owned();
-        self.created_date = Utc::now().naive_utc();
     }
 }
 
@@ -67,7 +82,6 @@ impl ToTarget for NotificationItem {
         self.client_id = client_id.to_owned();
         self.consume_success = BigDecimal::from(0);
         self.consumed = BigDecimal::from(0);
-        self.created_date = Utc::now().naive_utc();
     }
 }
 

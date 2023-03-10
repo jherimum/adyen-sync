@@ -55,7 +55,10 @@ pub enum DatabaseSubCommand {
     },
 
     /// Watch source database updates and sync
-    Watch,
+    Watch {
+        #[clap(flatten)]
+        args: DatabaseWatchArgs,
+    },
 }
 
 #[derive(Debug, Args, Clone)]
@@ -64,12 +67,15 @@ pub struct DatabaseSyncArgs {
     pub args: CommonsDatabaseArgs,
 
     ///batch size dor sync database
-    #[arg(short, long, default_value_t = 50)]
-    pub batch_size: u8,
+    #[arg(short, long, default_value_t = 200)]
+    pub batch_size: usize,
 
     /// Client id to be used on target database
     #[arg(short, long)]
     pub target_client_id: Option<String>,
+
+    #[arg(short, long, default_value_t = 1)]
+    pub threads: u8,
 }
 
 impl MergeSettings for DatabaseSyncArgs {
@@ -78,6 +84,7 @@ impl MergeSettings for DatabaseSyncArgs {
             args: self.args.merge(&settings),
             batch_size: self.batch_size,
             target_client_id: self.target_client_id.or(settings.target_client_id.clone()),
+            threads: self.threads,
         }
     }
 }
@@ -85,7 +92,7 @@ impl MergeSettings for DatabaseSyncArgs {
 impl MergeSettings for DatabaseStatusArgs {
     fn merge(self, settings: &Settings) -> Self {
         DatabaseStatusArgs {
-            args: self.args.merge(&settings),
+            common_args: self.common_args.merge(settings),
         }
     }
 }
@@ -93,5 +100,33 @@ impl MergeSettings for DatabaseStatusArgs {
 #[derive(Debug, Args, Clone)]
 pub struct DatabaseStatusArgs {
     #[clap(flatten)]
-    pub args: CommonsDatabaseArgs,
+    pub common_args: CommonsDatabaseArgs,
+}
+
+#[derive(Debug, Args, Clone)]
+pub struct DatabaseWatchArgs {
+    #[clap(flatten)]
+    pub common_args: CommonsDatabaseArgs,
+
+    /// pooling delay in seconds. Default: 5 seconds
+    #[arg(short, long, default_value_t = 5)]
+    pub delay: u8,
+
+    /// batch soze for each loop
+    #[arg(short, long, default_value_t = 10)]
+    pub batch_size: u8,
+
+    #[arg(short, long)]
+    pub target_client_id: Option<String>,
+}
+
+impl MergeSettings for DatabaseWatchArgs {
+    fn merge(self, settings: &Settings) -> Self {
+        DatabaseWatchArgs {
+            common_args: self.common_args.merge(settings),
+            delay: self.delay,
+            batch_size: self.batch_size,
+            target_client_id: self.target_client_id.or(settings.target_client_id.clone()),
+        }
+    }
 }

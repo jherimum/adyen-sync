@@ -1,7 +1,6 @@
 use crate::commands::database::commands::DatabaseStatusArgs;
 use crate::commands::root::GlobalOpts;
-use crate::database::repo::count_raw_notification_after;
-use crate::database::repo::get_max_raw_uidpk;
+use crate::database::repo;
 use crate::database::repo::test_conn;
 use crate::database::repo::Pools;
 use crate::settings::MergeSettings;
@@ -48,12 +47,12 @@ async fn diff(source_conn: &MySqlPool, target_conn: &MySqlPool) -> Result<()> {
         "Calculating the number of notifications are not sync with target database...",
     );
 
-    let last = get_max_raw_uidpk(target_conn).await?;
-    let count = count_raw_notification_after(source_conn, &last).await?;
+    let last = repo::get_last_raw_created_date(target_conn).await?;
+    //let count = count_raw_notification_after(source_conn, &last).await?;
 
     spinner.finish_with_message(format!(
         "There are {} notifications not sync on target database.",
-        count
+        1
     ));
 
     Ok(())

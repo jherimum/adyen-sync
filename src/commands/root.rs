@@ -5,7 +5,7 @@ use super::config::commands::ConfigCommand;
 use super::database::commands::DatabaseCommand;
 
 #[derive(Debug, Parser)]
-pub struct CliArgs {
+pub struct Cli {
     #[command(subcommand)]
     pub command: Command,
 

@@ -26,6 +26,5 @@ pub async fn config_set(settings: &mut Settings, args: &ConfigSetArgs) -> Result
     settings.timeout(&args.timeout);
     settings.target_client_id(&args.target_client_id);
     settings.write()?;
-    println!("Settings: {}", serde_json::to_string_pretty(settings)?);
-    Ok(())
+    config_show(settings).await
 }
